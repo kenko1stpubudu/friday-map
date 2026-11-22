@@ -1,0 +1,594 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>සිකුරාදා බෙදාහැරීම් රූට් සිතියම</title>
+
+<!-- Install as an app (PWA) -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#14202e">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Friday Run">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ink:#14202e; --surface:#1b2b3d; --surface-2:#233549;
+    --line:#2e4258; --text:#e9eff5; --muted:#93a6ba; --amber:#f2b544;
+    --z1:#2f6fed; --z2:#8b5cf6; --z3:#14b8a6; --z4:#f97316; --z5:#ec4899; --z6:#22c55e;
+    --sinh:'Noto Sans Sinhala'; --disp:'Space Grotesk'; --body:'Inter';
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:var(--sinh),var(--body),system-ui,sans-serif;
+    background:var(--ink); color:var(--text); overflow:hidden;
+  }
+  .app{display:flex;height:100vh;height:100dvh}
+
+  /* ---- Sidebar ---- */
+  .side{
+    width:352px;flex:0 0 352px;background:var(--ink);
+    display:flex;flex-direction:column;border-right:1px solid var(--line);
+  }
+  .head{padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+  .eyebrow{
+    font-family:var(--disp);font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--amber);font-weight:600;
+    display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+  h1{margin:8px 0 2px;font-size:20px;line-height:1.25;font-weight:700}
+  .sub{color:var(--muted);font-size:12.5px;line-height:1.5;margin-top:4px}
+  .stat{display:flex;flex-wrap:wrap;gap:14px 18px;margin-top:12px}
+  .stat b{font-family:var(--disp);font-size:22px;display:block;line-height:1}
+  .stat span{font-size:11px;color:var(--muted)}
+
+  .filters{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .chip{
+    font-family:var(--body);font-size:11.5px;font-weight:600;cursor:pointer;
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    padding:5px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;
+    transition:.15s;
+  }
+  .chip .dot{width:8px;height:8px;border-radius:50%}
+  .chip:hover{color:var(--text);border-color:var(--muted)}
+  .chip.active{color:#0d1620;font-weight:700}
+  .chip.all.active{background:var(--amber);border-color:var(--amber)}
+
+  .list{overflow-y:auto;flex:1;padding:6px 10px 24px}
+  .zgroup{margin-top:10px}
+  .zhead{
+    display:flex;align-items:center;gap:8px;padding:8px 8px 6px;
+    font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em;
+  }
+  .zhead .bar{width:14px;height:14px;border-radius:4px;flex:0 0 auto}
+  .zhead .cnt{margin-left:auto;font-family:var(--disp);font-size:11px;color:var(--muted)}
+  .row{
+    display:flex;gap:10px;align-items:center;padding:8px;border-radius:9px;
+    cursor:pointer;transition:.12s;
+  }
+  .row:hover{background:var(--surface)}
+  .row.dim{opacity:.28}
+  .num{
+    flex:0 0 auto;width:26px;height:26px;border-radius:50%;color:#0c141d;
+    font-family:var(--disp);font-weight:700;font-size:12.5px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .rtext{min-width:0}
+  .rname{font-size:13.5px;font-weight:600;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .raddr{font-size:11.5px;color:var(--muted);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tagnew{font-family:var(--disp);font-size:8.5px;font-weight:700;background:var(--amber);color:#0d1620;padding:1px 5px;border-radius:10px;margin-left:5px;vertical-align:middle}
+  .row.off{opacity:.6}
+  .row.off .rname{text-decoration:line-through;color:var(--muted)}
+  .rctl{display:flex;gap:4px;margin-left:auto;flex:0 0 auto}
+  .ic{width:27px;height:27px;border-radius:7px;border:1px solid var(--line);background:var(--surface-2);
+    cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);transition:.12s;padding:0}
+  .ic:hover{border-color:var(--muted)}
+  .ic.pw.on{background:#16603a;border-color:#1c7a49;color:#d6ffe6}
+  .ic.chk{filter:grayscale(1) opacity(.6)}
+  .ic.chk.on{filter:none;background:#5a2d12;border-color:#d4411e}
+  .ic.del{color:#e06a6a;font-size:12px}
+  .ic.dn{font-size:12px}
+  .ic.dn.on{background:#16603a;border-color:#1c7a49;color:#fff}
+  .row.done{background:rgba(34,197,94,.10)}
+  .row.done .num{box-shadow:0 0 0 2px #22c55e}
+  .syncpill{display:inline-block;margin-top:9px;font-family:var(--body),var(--sinh),sans-serif;
+    font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:20px;border:1px solid var(--line);color:var(--muted)}
+  .syncpill.ok{color:#8bd5a8;border-color:#1c7a49;background:rgba(34,197,94,.08)}
+  .syncpill.bad{color:#e9b66a;border-color:#7a5a1c;background:rgba(242,181,68,.08)}
+  .donebadge{position:absolute;top:-8px;left:-8px;width:18px;height:18px;border-radius:50%;background:#16a34a;
+    border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;
+    line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.35);z-index:4}
+
+  /* ---- Toolbar + add form ---- */
+  .tools{display:flex;gap:7px;padding:2px 16px 10px}
+  .tbtn{flex:1;font-family:var(--sinh),var(--body),sans-serif;font-size:12px;font-weight:600;cursor:pointer;
+    border:1px solid var(--line);background:var(--surface);color:var(--text);padding:9px;border-radius:9px;transition:.15s}
+  .tbtn:hover{border-color:var(--muted)}
+  .tbtn.prim{background:var(--amber);border-color:var(--amber);color:#0d1620}
+  .addform{display:none;flex-direction:column;gap:7px;padding:2px 16px 12px}
+  .addform.open{display:flex}
+  .addform input,.addform select{font-family:var(--sinh),var(--body),sans-serif;font-size:12.5px;
+    padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text)}
+  .addform input::placeholder{color:var(--muted)}
+  .afrow{display:flex;gap:7px}
+  .afrow button{flex:1;font-family:var(--sinh),var(--body),sans-serif;font-size:12px;font-weight:600;
+    cursor:pointer;padding:9px;border-radius:8px;border:1px solid var(--line)}
+  #fAdd{background:var(--amber);border-color:var(--amber);color:#0d1620}
+  #fCancel{background:var(--surface);color:var(--muted)}
+
+  /* ---- Map pins: chicken badge + off ---- */
+  .pinwrap{position:relative;width:30px;height:30px;overflow:visible}
+  .pinwrap.off{opacity:.55}
+  .chkbadge{position:absolute;top:-8px;right:-9px;width:20px;height:20px;border-radius:50%;background:#fff;
+    border:1.5px solid #d4411e;display:flex;align-items:center;justify-content:center;font-size:11px;
+    line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.35);z-index:3}
+  .pop .poc{margin-top:6px;font-size:12px;font-weight:600;color:#b3400f}
+  .placehint{display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:600;
+    background:var(--ink);color:var(--text);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:20px;
+    box-shadow:0 3px 12px rgba(0,0,0,.45);border:1px solid var(--amber);max-width:80%;text-align:center}
+  .placehint.show{display:block}
+
+  .foot{padding:11px 18px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.5}
+
+  /* ---- Language switch ---- */
+  .langsw{display:inline-flex;gap:3px;background:var(--surface);border:1px solid var(--line);
+    border-radius:20px;padding:3px;float:right;margin-top:2px}
+  .langsw button{
+    font-family:var(--sinh),var(--body),sans-serif;font-size:11px;font-weight:600;cursor:pointer;
+    border:0;background:transparent;color:var(--muted);padding:4px 11px;border-radius:16px;transition:.15s;
+  }
+  .langsw button:hover{color:var(--text)}
+  .langsw button.on{background:var(--amber);color:#0d1620}
+
+  /* ---- Map ---- */
+  .map-wrap{flex:1;position:relative;min-width:0}
+  #map{position:absolute;inset:0;background:#dfe6ea}
+  .leaflet-container{font-family:var(--body),var(--sinh),sans-serif}
+
+  .pin{
+    width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+    border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .pin b{transform:rotate(45deg);color:#0c141d;font-family:var(--disp);font-weight:700;font-size:12px}
+  .pop b{font-size:14px}
+  .pop .pa{color:#5a6b7a;font-size:12px;margin-top:2px}
+  .pop .pz{display:inline-block;margin-top:7px;font-size:11px;font-weight:600;color:#fff;padding:2px 9px;border-radius:20px}
+
+  /* ---- Responsive ---- */
+  @media (max-width:820px){
+    .app{flex-direction:column-reverse}
+    .side{width:100%;flex:1 1 auto;border-right:none;border-top:1px solid var(--line)}
+    .map-wrap{flex:0 0 46vh;height:46vh}
+    .list{max-height:none}
+    .head{padding:14px 18px 10px}
+    h1{font-size:18px}
+  }
+  ::-webkit-scrollbar{width:9px}
+  ::-webkit-scrollbar-thumb{background:var(--surface-2);border-radius:9px}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="head">
+      <div class="langsw" id="langsw">
+        <button data-lang="si">සිංහල</button>
+        <button data-lang="ja">日本語</button>
+      </div>
+      <div class="eyebrow" data-i18n="eyebrow"></div>
+      <h1 data-i18n="title"></h1>
+      <div class="sub" data-i18n="sub"></div>
+      <div class="stat">
+        <div><b id="cCount">21</b><span data-i18n="s_cust"></span></div>
+        <div><b id="doneStat">0/21</b><span data-i18n="s_done"></span></div>
+        <div><b id="chkCount">0</b><span data-i18n="s_chicken"></span></div>
+        <div><b id="kmStat">~90</b><span data-i18n="s_loop"></span></div>
+      </div>
+      <span class="syncpill" id="syncPill"></span>
+    </div>
+
+    <div class="filters" id="filters"></div>
+
+    <div class="tools">
+      <button class="tbtn prim" id="btnAdd" data-i18n="add_cust"></button>
+      <button class="tbtn" id="btnReset" data-i18n="reset_day"></button>
+    </div>
+    <div class="addform" id="addForm">
+      <input id="fName" data-i18n-ph="ph_name">
+      <input id="fAddr" data-i18n-ph="ph_addr">
+      <select id="fZone"></select>
+      <div class="afrow">
+        <button id="fAdd" data-i18n="f_add"></button>
+        <button id="fCancel" data-i18n="f_cancel"></button>
+      </div>
+    </div>
+
+    <div class="list" id="list"></div>
+
+    <div class="foot" data-i18n="foot"></div>
+  </aside>
+
+  <div class="map-wrap"><div id="map"></div><div class="placehint" id="placeHint" data-i18n="place_hint"></div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- Firebase (real-time sync between devices) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* ===================================================================
+   ⬇⬇⬇  ඔයාගෙ Firebase config එක මෙතනට paste කරන්න  ⬇⬇⬇
+   (Firebase console → Project settings → "Your apps" → Config)
+   databaseURL එක අනිවාර්යයි. config එක නැත්නම් app එක තනිවම වැඩ කරයි
+   (ඒත් devices අතර sync වෙන්නෙ නෑ).
+=================================================================== */
+const FB_CONFIG = {
+  apiKey:            "AIzaSyCNHs1p1Gwlb2TL5jtClxC3oY9LIsizWBo",
+  authDomain:        "kenko-friday.firebaseapp.com",
+  databaseURL:       "https://kenko-friday-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "kenko-friday",
+  storageBucket:     "kenko-friday.firebasestorage.app",
+  messagingSenderId: "763955283925",
+  appId:             "1:763955283925:web:090bdd8866f14289719f5c"
+};
+/* ⬆⬆⬆ ------------------------------------------------------- ⬆⬆⬆ */
+const FB_ON = FB_CONFIG.databaseURL && FB_CONFIG.databaseURL.indexOf("PASTE")<0;
+let fbRef=null, fbConnRef=null, applyingRemote=false;
+if(FB_ON && typeof firebase!=='undefined'){
+  try{
+    firebase.initializeApp(FB_CONFIG);
+    const _db=firebase.database();
+    fbRef     = _db.ref('friday/state');
+    fbConnRef = _db.ref('.info/connected');
+  }catch(e){ console.warn('Firebase init failed:', e); fbRef=null; }
+}
+</script>
+<script>
+let lang = 'si';                                  // 'si' | 'ja'
+const L10n = v => (v && typeof v==='object') ? (v[lang] ?? v.si) : v;
+
+const I18N = {
+  si:{ eyebrow:"සිකුරාදා · FRIDAY RUN", title:"බෙදාහැරීම් රූට් සිතියම",
+    sub:"ගමන් පිළිවෙළට අංක දමා, ප්‍රදේශය අනුව වර්ණ ගන්වා ඇත. ✓ = අද යනවා · ○ = අද off · 🐔 = චිකන් පෙට්ටිය · 📦 = බෙදලා ඉවරයි.",
+    s_cust:"අද යන", s_zone:"ප්‍රදේශ කලාප", s_loop:"km ලූප් (ආසන්න)", s_chicken:"🐔 චිකන්", s_done:"✅ බෙදුවා", all:"සියල්ල",
+    sync_on:"☁ සම්බන්ධයි · live", sync_off:"⚠ offline",
+    add_cust:"+ කස්ටමර්", reset_day:"අද යළි සෙට්",
+    reset_confirm:"අදට දාපු on/off සහ චිකන් සලකුණු ඔක්කොම මකලා අලුතින් පටන් ගන්නද?\n(අලුතින් එක් කළ කස්ටමර්ලා මැකෙන්නෙ නෑ)",
+    ph_name:"කස්ටමර් නම", ph_addr:"ලිපිනය / ප්‍රදේශය (ඕනෙ නම්)",
+    f_add:"Map එකේ තැන තෝරන්න →", f_cancel:"අවලංගු",
+    place_hint:"අලුත් කස්ටමර්ගෙ තැන map එකේ ක්ලික් කරන්න",
+    chicken:"චිකන් පෙට්ටිය එක්ක", del_confirm:"%s ඉවත් කරන්නද?",
+    foot:"ලොකේෂන් ආසන්න වශයෙන් පමණි. අලුත් කස්ටමර්ගෙ pin එක map එකේ drag කරලා තැන හදාගන්න පුළුවන්. වෙනස්කම් මේ පරිගණකයේ save වෙනවා." },
+  ja:{ eyebrow:"金曜日 · FRIDAY RUN", title:"配達ルートマップ",
+    sub:"巡回順に番号を付け、エリアごとに色分け。✓ = 本日配達 · ○ = 本日休み · 🐔 = チキンボックス · 📦 = 配達済。",
+    s_cust:"本日", s_zone:"エリア", s_loop:"km ループ（概算）", s_chicken:"🐔 チキン", s_done:"✅ 配達済", all:"すべて",
+    sync_on:"☁ 同期中 · live", sync_off:"⚠ オフライン",
+    add_cust:"+ お客様", reset_day:"本日リセット",
+    reset_confirm:"本日の On/Off とチキン印をすべてクリアして最初から始めますか？\n（追加したお客様は消えません）",
+    ph_name:"お客様の名前", ph_addr:"住所・エリア（任意）",
+    f_add:"地図で位置を選ぶ →", f_cancel:"キャンセル",
+    place_hint:"地図をクリックして新規お客様の位置を指定",
+    chicken:"チキンボックスあり", del_confirm:"%s を削除しますか？",
+    foot:"位置は目安です。追加したお客様の pin は地図上でドラッグして調整できます。変更はこのPCに保存されます。" }
+};
+
+const ZONES = {
+  z1:{color:"#2f6fed", name:{si:"උතුර (Kelaniya · Peliyagoda)",   ja:"北部 (Kelaniya · Peliyagoda)"}},
+  z2:{color:"#8b5cf6", name:{si:"කොළඹ මධ්‍යම (Col 3 · 6 · 7)",     ja:"コロンボ中心部 (Col 3 · 6 · 7)"}},
+  z3:{color:"#14b8a6", name:{si:"කොළඹ 5 · නාරාහේන්පිට",           ja:"コロンボ5 · Narahenpita"}},
+  z4:{color:"#f97316", name:{si:"දෙහිවල · කලුබෝවිල · කොහුවල",      ja:"Dehiwala · Kalubowila · Kohuwala"}},
+  z5:{color:"#ec4899", name:{si:"නුගේගොඩ · පිළියන්දල (දකුණ)",      ja:"Nugegoda · Piliyandala (南部)"}},
+  z6:{color:"#22c55e", name:{si:"නාවල · මාදිවෙල · බත්තරමුල්ල",     ja:"Nawala · Madiwela · Battaramulla"}},
+};
+
+// Start & end point (warehouse / dispatch)
+const DEPOT = {name:{si:"ගබඩාව / පිටත්වීම", ja:"倉庫 / 出発地点"}, addr:"27/12 Rosmead Place, Colombo 07", lat:6.9143, lng:79.8698};
+
+// Route loops out of the depot: North first, sweep South-West, then East, back to Col 7
+const STOPS = [
+  {n:1, z:"z1", name:"UDARI SILVA",         addr:"Kelaniya",                         lat:6.9518, lng:79.9133},
+  {n:2, z:"z1", name:"Eco Boutique",        addr:"440/A Waragoda Rd, Peliyagoda",    lat:6.9600, lng:79.8950},
+  {n:3, z:"z2", name:"WIMALASEEKARA",       addr:"Colombo 03",                       lat:6.9101, lng:79.8500},
+  {n:4, z:"z2", name:"KRISANTHI",           addr:"Wellawatta",                       lat:6.8741, lng:79.8605},
+  {n:5, z:"z2", name:"Sureka",              addr:"149/7A Suvisudarma Rd, Colombo 06",lat:6.8770, lng:79.8630},
+  {n:6, z:"z3", name:"ANANDI",              addr:"Narahenpita",                      lat:6.8894, lng:79.8756},
+  {n:7, z:"z3", name:"chelan",              addr:"Ninewells Hospital, Colombo 05",   lat:6.8925, lng:79.8720},
+  {n:8, z:"z3", name:"Yamuna",              addr:"109/3 Fife Road, Colombo 05",      lat:6.8850, lng:79.8690},
+  {n:9, z:"z4", name:"UDARI",               addr:"Kalubowila",                       lat:6.8620, lng:79.8760},
+  {n:10,z:"z4", name:"DR, NABEL",           addr:"Dehiwala",                         lat:6.8360, lng:79.8690},
+  {n:11,z:"z4", name:"THANUJA",             addr:"22 Tissa Mw, Dehiwala",            lat:6.8470, lng:79.8700},
+  {n:12,z:"z4", name:"DAYALANI",            addr:"Saranankara Road, Dehiwala",       lat:6.8500, lng:79.8740},
+  {n:13,z:"z4", name:"DINITHI EDIRISURIYA", addr:"Kohuwala",                         lat:6.8660, lng:79.8820},
+  {n:14,z:"z5", name:"Clarensa",            addr:"No.38A Kubukkanpokuna Rd, Udahamulla, Nugegoda", lat:6.8560, lng:79.9070},
+  {n:15,z:"z5", name:"Chintha Jayasinghe",  addr:"120/34 CT Gardens, Thumbowila, Piliyandala",     lat:6.8100, lng:79.9080},
+  {n:16,z:"z6", name:"KANCHANA",            addr:"Madiwela",                         lat:6.8880, lng:79.9080},
+  {n:17,z:"z6", name:"ARIYANANDA",          addr:"Nawala",                           lat:6.8964, lng:79.8885},
+  {n:18,z:"z6", name:"SURANI PERERA",       addr:"Lake Road, Battaramulla",          lat:6.9000, lng:79.9160},
+  {n:19,z:"z6", name:"Ito San",             addr:"Battaramulla",                     lat:6.8980, lng:79.9223},
+  {n:20,z:"z6", name:"Michel",              addr:"Battaramulla",                     lat:6.8965, lng:79.9250},
+  {n:21,z:"z2", name:"ANOKA",               addr:"Colombo 07", note:{si:"ආපසු එන අතරමග", ja:"帰り道の途中"}, lat:6.9066, lng:79.8596},
+];
+
+const map = L.map('map',{zoomControl:true}).setView([6.89,79.885],12);
+// Key-free Esri basemaps (work from a local file, no API key, no usage block)
+const esri = (service, attr) => L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/'+service+'/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom:19, attribution:attr });
+const baseStreet = esri('World_Street_Map', 'Tiles &copy; Esri');
+const baseTopo   = esri('World_Topo_Map',   'Tiles &copy; Esri');
+const baseSat    = esri('World_Imagery',    'Tiles &copy; Esri, Maxar');
+baseStreet.addTo(map);
+L.control.layers(
+  { 'වීදි · Street':baseStreet, 'භූමිය · Topo':baseTopo, 'චන්ද්‍රිකා · Satellite':baseSat },
+  null, { position:'topright', collapsed:true }
+).addTo(map);
+
+// ---------- State (localStorage cache + Firebase live sync) ----------
+const STORE_KEY='kenko_friday_v3';
+let S={ off:{}, chk:{}, delivered:{}, added:[] };
+function load(){ try{const r=localStorage.getItem(STORE_KEY); if(r){const o=JSON.parse(r);
+  S.off=o.off||{}; S.chk=o.chk||{}; S.delivered=o.delivered||{}; S.added=o.added||[];}}catch(e){} }
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){}
+  if(fbRef && !applyingRemote){ fbRef.set(S).catch(()=>{}); }   // push to all devices
+}
+load();
+
+const BASE = STOPS.map(s=>({ ...s, id:'s'+s.n }));       // original stops get stable ids
+const stops = () => BASE.concat(S.added);                 // base + customer-added
+const isOff  = id => !!S.off[id];
+const isChk  = id => !!S.chk[id];
+const isDone = id => !!S.delivered[id];
+let nextN = Math.max(...BASE.map(s=>s.n), ...S.added.map(s=>s.n||0)) + 1;
+
+// ---------- Popup + icon builders ----------
+const addrLine  = s => s.addr + (s.note ? ' ('+L10n(s.note)+')' : '');
+const stopPopup = s => `<div class="pop"><b>${s.n}. ${s.name}</b>`+
+  `<div class="pa">${addrLine(s)||''}</div>`+
+  `<span class="pz" style="background:${ZONES[s.z].color}">${L10n(ZONES[s.z].name)}</span>`+
+  (isChk(s.id)?`<div class="poc">🐔 ${I18N[lang].chicken}</div>`:'')+
+  (isDone(s.id)?`<div class="poc" style="color:#16a34a">✅ ${I18N[lang].s_done}</div>`:'')+`</div>`;
+const depotPopup = () => `<div class="pop"><b>${L10n(DEPOT.name)}</b><div class="pa">${DEPOT.addr}</div></div>`;
+
+function pinHtml(s){
+  const off=isOff(s.id), done=isDone(s.id);
+  return `<div class="pinwrap${(off||done)?' off':''}">`+
+    `<div class="pin" style="background:${off?'#8a97a5':ZONES[s.z].color}"><b>${s.n}</b></div>`+
+    (isChk(s.id)?`<div class="chkbadge">🐔</div>`:'')+
+    (done?`<div class="donebadge">✓</div>`:'')+`</div>`;
+}
+const iconFor = s => L.divIcon({ className:'', iconSize:[30,30], iconAnchor:[15,29], popupAnchor:[0,-28], html:pinHtml(s) });
+
+// depot
+const depotIcon = L.divIcon({
+  className:'', iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-16],
+  html:`<div style="width:30px;height:30px;border-radius:8px;background:#f2b544;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:16px">★</div>`
+});
+const depotMarker = L.marker([DEPOT.lat,DEPOT.lng],{icon:depotIcon,zIndexOffset:1000})
+  .addTo(map).bindPopup(depotPopup());
+
+// customer markers (keyed by id)
+const markers={};
+function addMarker(s){
+  const m=L.marker([s.lat,s.lng],{icon:iconFor(s),draggable:!!s.custom}).addTo(map).bindPopup(stopPopup(s));
+  if(s.custom) m.on('dragend',()=>{ const ll=m.getLatLng(); s.lat=ll.lat; s.lng=ll.lng; save(); updateRoute(); updateCounts(); });
+  markers[s.id]=m;
+}
+stops().forEach(addMarker);
+function refreshMarker(s){ const m=markers[s.id]; if(m){ m.setIcon(iconFor(s)); m.setPopupContent(stopPopup(s)); } }
+
+// ---------- Route (active stops only) ----------
+let route=L.polyline([],{color:'#f2b544',weight:2,opacity:.55,dashArray:'2 7'}).addTo(map);
+const activeStops = () => stops().filter(s=>!isOff(s.id)).sort((a,b)=>a.n-b.n);
+function updateRoute(){
+  route.setLatLngs([[DEPOT.lat,DEPOT.lng], ...activeStops().map(s=>[s.lat,s.lng]), [DEPOT.lat,DEPOT.lng]]);
+}
+updateRoute();
+map.fitBounds(route.getBounds().pad(0.12));
+
+// ---------- Distance (rough road km) ----------
+function haver(a,b){const R=6371,p=Math.PI/180,dlat=(b[0]-a[0])*p,dlon=(b[1]-a[1])*p;
+  const x=Math.sin(dlat/2)**2+Math.cos(a[0]*p)*Math.cos(b[0]*p)*Math.sin(dlon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));}
+function routeKm(){const pts=route.getLatLngs().map(ll=>[ll.lat,ll.lng]); let d=0;
+  for(let i=0;i<pts.length-1;i++) d+=haver(pts[i],pts[i+1]); return Math.round(d*1.35);}
+
+// ---------- Counts ----------
+function updateCounts(){
+  const act=stops().filter(s=>!isOff(s.id));
+  document.getElementById('cCount').textContent=act.length;
+  document.getElementById('chkCount').textContent=act.filter(s=>isChk(s.id)).length;
+  document.getElementById('doneStat').textContent=act.filter(s=>isDone(s.id)).length+'/'+act.length;
+  document.getElementById('kmStat').textContent='~'+routeKm();
+}
+
+// ---------- Toggles ----------
+function rebuildKeepScroll(){ const t=listEl.scrollTop; buildList(); listEl.scrollTop=t; }
+function toggleOff(s){ isOff(s.id)?delete S.off[s.id]:S.off[s.id]=1; save(); refreshMarker(s); updateRoute(); updateCounts(); rebuildKeepScroll(); }
+function toggleChk(s){ isChk(s.id)?delete S.chk[s.id]:S.chk[s.id]=1; save(); refreshMarker(s); updateCounts(); rebuildKeepScroll(); }
+function toggleDone(s){ isDone(s.id)?delete S.delivered[s.id]:S.delivered[s.id]=1; save(); refreshMarker(s); updateCounts(); rebuildKeepScroll(); }
+function removeCustom(s){
+  if(!confirm((I18N[lang].del_confirm||'Delete %s?').replace('%s',s.name))) return;
+  const m=markers[s.id]; if(m){ map.removeLayer(m); delete markers[s.id]; }
+  delete S.off[s.id]; delete S.chk[s.id]; delete S.delivered[s.id];
+  S.added=S.added.filter(x=>x.id!==s.id);
+  save(); updateRoute(); updateCounts(); buildList();
+}
+
+// ---------- Sidebar ----------
+const listEl = document.getElementById('list');
+const fEl = document.getElementById('filters');
+let active = 'all';
+const zoneShort = zid => L10n(ZONES[zid].name).split(' (')[0].split(' ·')[0];
+
+function makeRow(s){
+  const off=isOff(s.id), chk=isChk(s.id), done=isDone(s.id), c=ZONES[s.z].color;
+  const r=document.createElement('div');
+  r.className='row'+(off?' off':'')+(done?' done':''); r.dataset.id=s.id; r.dataset.zone=s.z;
+  r.innerHTML=
+    `<div class="num" style="background:${off?'#8a97a5':c}">${s.n}</div>`+
+    `<div class="rtext"><div class="rname">${s.name}${s.custom?'<span class="tagnew">NEW</span>':''}</div>`+
+    `<div class="raddr">${addrLine(s)||''}</div></div>`+
+    `<div class="rctl">`+
+      `<button class="ic chk${chk?' on':''}" title="Chicken 🐔">🐔</button>`+
+      `<button class="ic pw${off?'':' on'}" title="On/Off">${off?'○':'✓'}</button>`+
+      `<button class="ic dn${done?' on':''}" title="Delivered 📦">📦</button>`+
+      (s.custom?`<button class="ic del" title="Delete">✕</button>`:'')+
+    `</div>`;
+  r.onclick=()=>{ map.flyTo([s.lat,s.lng],15,{duration:.6}); markers[s.id].openPopup(); };
+  r.querySelector('.chk').onclick=e=>{ e.stopPropagation(); toggleChk(s); };
+  r.querySelector('.pw').onclick=e=>{ e.stopPropagation(); toggleOff(s); };
+  r.querySelector('.dn').onclick=e=>{ e.stopPropagation(); toggleDone(s); };
+  const del=r.querySelector('.del'); if(del) del.onclick=e=>{ e.stopPropagation(); removeCustom(s); };
+  return r;
+}
+function buildList(){
+  listEl.innerHTML='';
+  Object.keys(ZONES).forEach(zid=>{
+    const items=stops().filter(s=>s.z===zid).sort((a,b)=>a.n-b.n);
+    if(!items.length) return;
+    const actN=items.filter(s=>!isOff(s.id)).length;
+    const g=document.createElement('div');
+    g.className='zgroup'; g.dataset.zone=zid;
+    g.innerHTML=`<div class="zhead"><span class="bar" style="background:${ZONES[zid].color}"></span>${L10n(ZONES[zid].name)}<span class="cnt">${actN}/${items.length}</span></div>`;
+    items.forEach(s=>g.appendChild(makeRow(s)));
+    listEl.appendChild(g);
+  });
+  [...listEl.querySelectorAll('.zgroup')].forEach(g=>{ g.style.display=(active==='all'||g.dataset.zone===active)?'':'none'; });
+}
+
+// ---------- Filters ----------
+function mkChip(id,label,color){
+  const c=document.createElement('div');
+  c.className='chip'+(id==='all'?' all':'')+(id===active?' active':'');
+  c.dataset.zone=id;
+  c.innerHTML=(color?`<span class="dot" style="background:${color}"></span>`:'')+label;
+  if(id===active && id!=='all'){ c.style.background=color; c.style.borderColor=color; }
+  c.onclick=()=>setFilter(id);
+  fEl.appendChild(c);
+}
+function buildFilters(){
+  fEl.innerHTML='';
+  mkChip('all', I18N[lang].all, null);
+  Object.keys(ZONES).forEach(zid=>mkChip(zid, zoneShort(zid), ZONES[zid].color));
+}
+function setFilter(id, noFly){
+  active=id;
+  const color = id==='all' ? null : ZONES[id].color;
+  [...fEl.children].forEach(ch=>{
+    const on=ch.dataset.zone===id;
+    ch.classList.toggle('active',on);
+    ch.style.background = (on && id!=='all') ? color : '';
+    ch.style.borderColor = (on && id!=='all') ? color : '';
+  });
+  stops().forEach(s=>{ const m=markers[s.id]; if(m) m.setOpacity(id==='all'||s.z===id?1:0.2); });
+  [...listEl.querySelectorAll('.zgroup')].forEach(g=>{ g.style.display=(id==='all'||g.dataset.zone===id)?'':'none'; });
+  if(noFly) return;
+  if(id!=='all'){
+    const pts=stops().filter(s=>s.z===id).map(s=>[s.lat,s.lng]);
+    if(pts.length) map.flyToBounds(L.latLngBounds(pts).pad(0.35),{duration:.6});
+  } else { map.flyToBounds(route.getBounds().pad(0.12),{duration:.6}); }
+}
+
+// ---------- Add customer ----------
+const addForm=document.getElementById('addForm');
+function fillZoneSelect(){ const sel=document.getElementById('fZone'); sel.innerHTML='';
+  Object.keys(ZONES).forEach(zid=>{ const o=document.createElement('option'); o.value=zid; o.textContent=zoneShort(zid); sel.appendChild(o); }); }
+document.getElementById('btnAdd').onclick=()=>{ addForm.classList.toggle('open'); if(addForm.classList.contains('open')) fillZoneSelect(); };
+document.getElementById('fCancel').onclick=()=>addForm.classList.remove('open');
+let placing=null;
+document.getElementById('fAdd').onclick=()=>{
+  const name=document.getElementById('fName').value.trim();
+  if(!name){ document.getElementById('fName').focus(); return; }
+  placing={ name, addr:document.getElementById('fAddr').value.trim(), z:document.getElementById('fZone').value };
+  addForm.classList.remove('open');
+  document.getElementById('placeHint').classList.add('show');
+  map.getContainer().style.cursor='crosshair';
+};
+map.on('click',e=>{
+  if(!placing) return;
+  const s={ id:'c'+Date.now(), n:nextN++, z:placing.z, name:placing.name, addr:placing.addr, lat:e.latlng.lat, lng:e.latlng.lng, custom:true };
+  S.added.push(s); save(); addMarker(s);
+  placing=null; map.getContainer().style.cursor='';
+  document.getElementById('placeHint').classList.remove('show');
+  document.getElementById('fName').value=''; document.getElementById('fAddr').value='';
+  updateRoute(); updateCounts(); buildList();
+  map.panTo([s.lat,s.lng]); markers[s.id].openPopup();
+});
+
+// ---------- Reset day ----------
+document.getElementById('btnReset').onclick=()=>{
+  if(!confirm(I18N[lang].reset_confirm)) return;
+  S.off={}; S.chk={}; S.delivered={}; save();
+  stops().forEach(refreshMarker); updateRoute(); updateCounts(); buildList();
+};
+
+// ---------- Language switch ----------
+function applyStatic(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = I18N[lang][el.dataset.i18n] || ''; });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder = I18N[lang][el.dataset.i18nPh] || ''; });
+  document.querySelectorAll('#langsw button').forEach(b=>b.classList.toggle('on', b.dataset.lang===lang));
+}
+function setLang(l){
+  if(!I18N[l]) return;
+  lang=l;
+  document.documentElement.setAttribute('lang', l);
+  applyStatic();
+  buildFilters();
+  buildList();
+  stops().forEach(s=>{ const m=markers[s.id]; if(m) m.setPopupContent(stopPopup(s)); });
+  depotMarker.setPopupContent(depotPopup());
+  updateCounts();
+  if(addForm.classList.contains('open')) fillZoneSelect();
+  setSyncDot(lastConn);
+  setFilter(active, true);
+}
+document.getElementById('langsw').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(b) setLang(b.dataset.lang);
+});
+
+// ---------- Live sync (Firebase) ----------
+let lastConn=false;
+const syncPill=document.getElementById('syncPill');
+function setSyncDot(on){
+  lastConn=on;
+  if(!FB_ON){ syncPill.textContent=''; syncPill.className='syncpill'; return; }
+  syncPill.textContent = on ? I18N[lang].sync_on : I18N[lang].sync_off;
+  syncPill.className = 'syncpill '+(on?'ok':'bad');
+}
+function syncMarkers(){
+  const ids=new Set(stops().map(s=>s.id));
+  Object.keys(markers).forEach(id=>{ if(!ids.has(id)){ map.removeLayer(markers[id]); delete markers[id]; } });
+  stops().forEach(s=>{ if(!markers[s.id]) addMarker(s); });
+}
+function applyRemote(v){
+  applyingRemote=true;
+  S.off=v.off||{}; S.chk=v.chk||{}; S.delivered=v.delivered||{}; S.added=v.added||[];
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){}
+  S.added.forEach(s=>{ if((s.n||0)>=nextN) nextN=s.n+1; });
+  syncMarkers();
+  const t=listEl.scrollTop;
+  stops().forEach(refreshMarker);
+  updateRoute(); updateCounts(); buildList(); listEl.scrollTop=t;
+  applyingRemote=false;
+}
+if(fbRef){
+  fbRef.on('value', snap=>{ const v=snap.val(); if(v) applyRemote(v); else fbRef.set(S).catch(()=>{}); });
+  if(fbConnRef) fbConnRef.on('value', s=>setSyncDot(!!s.val()));
+}
+
+// initial render
+setLang('si');
+
+// register service worker (enables install + offline)
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>

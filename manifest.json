@@ -1,0 +1,16 @@
+{
+  "name": "Kenko Friday Delivery",
+  "short_name": "Friday Run",
+  "description": "Kenko1st — Friday delivery route map",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#14202e",
+  "theme_color": "#14202e",
+  "lang": "si",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
